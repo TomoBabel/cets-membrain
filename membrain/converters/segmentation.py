@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from cets_data_model.models.models import (
     SegmentationMask3D,
@@ -10,14 +11,17 @@ from cets_data_model.utils.image_utils import get_mrc_info
 from membrain.constants import (
     MEMBRANE_LABEL_VALUE,
     MRC_EXT,
+    SEGMENTED_SUFFIX,
     SKELETON_SUFFIX,
     MembrainMaskType,
 )
 from membrain.utils.utils import (
+    export_mrc,
     validate_file,
     gen_membrane_object,
     gen_tomogram_frame,
     get_max_label,
+    get_voxel_size,
 )
 
 
@@ -112,6 +116,61 @@ class MembrainSegmentation:
             depth=mrc_info.size_z,
             coordinate_systems=coordinate_systems,
             coordinate_transformations=coordinate_transformations,
+        )
+
+    def cets_to_membrain(
+        self,
+        mask: SegmentationMask3D,
+        output_directory: os.PathLike,
+        tomo_name: str,
+        checkpoint: str | None = None,
+        skeleton: bool | None = None,
+        copy: bool = False,
+    ) -> Path:
+        """Makes the mask of a CETS ``SegmentationMask3D`` annotation available with the name
+        MemBrain-seg gives it: ``<tomo_name>[_<checkpoint>]_segmented.mrc`` for a
+        segmentation (binary or connected components) and
+        ``<tomo_name>[_<checkpoint>]_segmented_skel.mrc`` for its skeleton, e.g. to
+        skeletonize a segmentation with membrain skeletonize.
+
+        The mask itself is the mrc file the annotation points to, so nothing is converted: it
+        is linked, or copied if requested or if the sampling rate of its header is not the
+        one of the annotation (the header of the copy is then updated).
+
+        :param mask: the segmentation or skeleton annotation.
+        :type mask: SegmentationMask3D.
+
+        :param output_directory: directory in which the mask will be written.
+        :type output_directory: os.PathLike.
+
+        :param tomo_name: name of the tomogram in the MemBrain-seg file names: the name of
+        the segmented tomogram file without extension.
+        :type tomo_name: str.
+
+        :param checkpoint: name of the MemBrain-seg model checkpoint, which MemBrain-seg
+        adds to the name of the segmentations (scipion-em-membrain does not).
+        :type checkpoint: str, optional. Defaults to None.
+
+        :param skeleton: whether the mask is a skeleton. CETS does not record it, so when
+        omitted the masks whose file ends in ``_skel.mrc`` are considered skeletons.
+        :type skeleton: bool, optional. Defaults to None.
+
+        :param copy: copy the mask instead of linking it.
+        :type copy: bool, optional. Defaults to False.
+
+        :returns: the path of the mask.
+        """
+        if not mask.path:
+            raise ValueError(f"The annotation [{mask.id}] has no file.")
+        if skeleton is None:
+            skeleton = mask.path.endswith(f"{SKELETON_SUFFIX}{MRC_EXT}")
+        name = f"{tomo_name}_{checkpoint}" if checkpoint else tomo_name
+        name += SEGMENTED_SUFFIX + (SKELETON_SUFFIX if skeleton else "")
+        return export_mrc(
+            mask.path,
+            Path(output_directory) / f"{name}{MRC_EXT}",
+            voxel_size=get_voxel_size(mask),
+            copy=copy,
         )
 
     @staticmethod

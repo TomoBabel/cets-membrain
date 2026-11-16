@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from cets_data_model.models.models import (
     ProbabilityMap3D,
@@ -6,8 +7,18 @@ from cets_data_model.models.models import (
     AnnotationType,
 )
 from cets_data_model.utils.image_utils import get_mrc_info
-from membrain.constants import MRC_EXT, SEGMENTATION_THRESHOLD_DEFAULT
-from membrain.utils.utils import validate_file, gen_membrane_object, gen_tomogram_frame
+from membrain.constants import (
+    MRC_EXT,
+    SCORES_SUFFIX,
+    SEGMENTATION_THRESHOLD_DEFAULT,
+)
+from membrain.utils.utils import (
+    export_mrc,
+    validate_file,
+    gen_membrane_object,
+    gen_tomogram_frame,
+    get_voxel_size,
+)
 
 
 class MembrainScores:
@@ -80,6 +91,51 @@ class MembrainScores:
             depth=mrc_info.size_z,
             coordinate_systems=coordinate_systems,
             coordinate_transformations=coordinate_transformations,
+        )
+
+    def cets_to_membrain(
+        self,
+        scores: ProbabilityMap3D,
+        output_directory: os.PathLike,
+        tomo_name: str,
+        copy: bool = False,
+    ) -> Path:
+        """Makes the score map of a CETS ``ProbabilityMap3D`` annotation available with the
+        name MemBrain-seg gives it (``<tomo_name>_scores.mrc``), e.g. to threshold it with
+        membrain thresholds.
+
+        The map itself is the mrc file the annotation points to, so nothing is converted: it
+        is linked, or copied if requested or if the sampling rate of its header is not the
+        one of the annotation (the header of the copy is then updated). MemBrain-seg score
+        maps hold logits, so annotations with other kinds of values are rejected.
+
+        :param scores: the score map annotation.
+        :type scores: ProbabilityMap3D.
+
+        :param output_directory: directory in which the score map will be written.
+        :type output_directory: os.PathLike.
+
+        :param tomo_name: name of the tomogram in the MemBrain-seg file names: the name of
+        the segmented tomogram file without extension.
+        :type tomo_name: str.
+
+        :param copy: copy the map instead of linking it.
+        :type copy: bool, optional. Defaults to False.
+
+        :returns: the path of the score map.
+        """
+        if scores.value_type not in (None, ProbabilityMapValueType.logit.value):
+            raise ValueError(
+                f"The annotation [{scores.id}] holds values of type "
+                f"'{scores.value_type}', not MemBrain-seg scores (logits)."
+            )
+        if not scores.path:
+            raise ValueError(f"The annotation [{scores.id}] has no file.")
+        return export_mrc(
+            scores.path,
+            Path(output_directory) / f"{tomo_name}{SCORES_SUFFIX}{MRC_EXT}",
+            voxel_size=get_voxel_size(scores),
+            copy=copy,
         )
 
     @staticmethod
