@@ -54,6 +54,9 @@ optional-dependencies.docs = [
 [project.urls]
 Repository = "https://github.com/TomoBabel/cets-membrain"
 
+[project.scripts]
+cets-membrain = "membrain.cli:main"
+
 [tool.mypy]
 files = ["membrain"]
 python_version = "3.11"

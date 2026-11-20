@@ -1,0 +1,48 @@
+scores:
+  width: 141
+  height: 281
+  depth: 91
+  coordinate_systems:
+  - name: vTomo1_array
+    axes:
+    - name: x
+      axis_unit: pixel
+      axis_type: array
+    - name: y
+      axis_unit: pixel
+      axis_type: array
+    - name: z
+      axis_unit: pixel
+      axis_type: array
+  - name: vTomo1_physical
+    axes:
+    - name: x
+      axis_unit: angstrom
+      axis_type: space
+    - name: y
+      axis_unit: angstrom
+      axis_type: space
+    - name: z
+      axis_unit: angstrom
+      axis_type: space
+  coordinate_transformations:
+  - transformation_type: scale
+    name: array_to_physical
+    input: vTomo1_array
+    output: vTomo1_physical
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+  path: ./data/segmentation_binary/vTomo1_scores.mrc
+  id: membrain_scores_vTomo1
+  annotation_type: probability_map_3D
+  name: MemBrain-seg membrane scores (logits) for vTomo1
+  source_tomogram_id: vTomo1
+  annotated_object:
+    feature_type: GO:0016020
+    name: null
+    description: null
+  derived_from_annotation_id: null
+  value_type: logit
+  threshold: 0.0

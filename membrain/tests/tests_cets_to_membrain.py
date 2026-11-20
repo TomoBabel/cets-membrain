@@ -86,6 +86,9 @@ class CetsToMembrainSegmentationTest(CetsToMembrainBaseTest):
         self.assertFalse(out.is_symlink())
         with mrcfile.open(out, header_only=True) as mrc:
             self.assertAlmostEqual(float(mrc.voxel_size.x), PIXEL_SIZE, places=5)
+        # The whole file is copied, not only its header
+        self.assertEqual(out.stat().st_size, mask_file.stat().st_size)
+        self.assertEqual(mrcfile.read(out).tobytes(), mrcfile.read(mask_file).tobytes())
         with mrcfile.open(mask_file, header_only=True) as mrc:
             self.assertAlmostEqual(float(mrc.voxel_size.x), 1.0, places=5)
 

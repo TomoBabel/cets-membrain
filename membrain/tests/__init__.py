@@ -5,6 +5,9 @@ import numpy as np
 
 from membrain.constants import MRC_EXT, SCORES_SUFFIX, SEGMENTED_SUFFIX, SKELETON_SUFFIX
 
+# Real MemBrain-seg data, used by tests_cli_fixtures.py
+DATA_DIR = Path(__file__).parent / "data"
+
 TOMO_ID = "TS_01"
 PIXEL_SIZE = 5.4
 # Volume dimensions in x, y, z (the mrc data is stored as z, y, x)
